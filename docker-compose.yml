@@ -1,0 +1,57 @@
+version: '3.9'
+
+# Infrastructure only (PostgreSQL, MongoDB, Redis). The backend and
+# frontend are run locally with `npm run dev` / `npm start` against these
+# services - see README.md for the full workflow. This keeps the compose
+# file simple and keeps iteration on app code fast (no image rebuilds).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gym_slot_booking_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DATABASE:-gym_slot_booking}
+      POSTGRES_USER: ${PG_USER:-gymapp}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-gymapp_dev_password}
+    ports:
+      - '${PG_PORT:-5432}:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${PG_USER:-gymapp}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: gym_slot_booking_mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.adminCommand("ping")']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: gym_slot_booking_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg_data:
+  mongo_data:
+  redis_data:
